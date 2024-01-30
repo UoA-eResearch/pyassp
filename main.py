@@ -34,6 +34,12 @@ if __name__ == '__main__':
     c_lib.setFMTdefaults(popts)
     # TODO: set options from parameters
 
+    # From r code
+    opts.numFormants = 2
+    opts.msSize = 49.0
+    opts.gender = ord('f')
+    opts.preEmph = 0.95
+
     # Input file
     s_file = pathlib.Path().absolute() / 'wavs' / 'oldfemale-word-taa-R001M.wav'
     assert s_file.exists()
