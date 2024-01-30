@@ -1,26 +1,7 @@
 import ctypes
 import pathlib
-from _ctypes import POINTER
 
-from ctypes import c_long, c_double, c_int, c_char, c_uint16, c_uint8, c_size_t
-from structs import ENDIAN, DDESC, DOfreeFunc, DOBJ
-from enums import fform_e, fdata_e, dcode_e, dform_e, dtype_e
-
-class aopts(ctypes.Structure):
-    _fields_ = [("options", c_long), ("beginTime", c_double), ("endTime", c_double), ("centreTime", c_double), ("msSize", c_double),
-         ("msShift", c_double), ("msSmooth", c_double), ("bandwidth", c_double), ("resolution", c_double), ("gain", c_double),
-         ("range", c_double), ("preEmph", c_double), ("alpha", c_double), ("threshold", c_double), ("maxF", c_double),
-         ("minF", c_double), ("nomF1", c_double), ("voiAC1", c_double), ("voiMag", c_double), ("voiProb", c_double),
-         ("voiRMS", c_double), ("voiZCR", c_double), ("hpCutOff", c_double), ("lpCutOff", c_double), ("stopDB", c_double),
-         ("tbWidth", c_double), ("FFTLen", c_long), ("channel", c_int), ("gender", c_int), ("order", c_int),
-         ("increment", c_int), ("numLevels", c_int), ("numFormants", c_int), ("precision", c_int), ("accuracy", c_int),
-         ("type", c_char * 32), ("format", c_char * 32), ("winFunc", c_char * 32)]
-
-    def __repr__(self):
-        strs = '\t'.join([f'{k}={getattr(self, k)}' for k, _ in self._fields_])
-
-        return f'AOPTS:\n{strs}'
-
+from structs import DOBJ, AOPTS
 
 if __name__ == '__main__':
     # Load libassp
@@ -28,9 +9,9 @@ if __name__ == '__main__':
     c_lib = ctypes.CDLL(libname)
 
     # Create options structure and set defaults
-    opts = aopts()
+    opts = AOPTS()
     popts = ctypes.pointer(opts)
-    c_lib.setFMTdefaults.argtypes = (ctypes.POINTER(aopts), )
+    c_lib.setFMTdefaults.argtypes = (ctypes.POINTER(AOPTS),)
     c_lib.setFMTdefaults(popts)
     # TODO: set options from parameters
 
@@ -54,7 +35,7 @@ if __name__ == '__main__':
     c_lib.asspFOpen(fname, 1, input_obj)
 
     # Run forest - compute formants
-    c_lib.computeFMT.argtypes = (ctypes.POINTER(DOBJ), ctypes.POINTER(aopts), ctypes.POINTER(DOBJ))
+    c_lib.computeFMT.argtypes = (ctypes.POINTER(DOBJ), ctypes.POINTER(AOPTS), ctypes.POINTER(DOBJ))
     c_lib.computeFMT.restype = ctypes.POINTER(DOBJ)
     out_pt = c_lib.computeFMT(input_obj, popts, None)
 

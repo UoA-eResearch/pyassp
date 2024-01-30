@@ -1,4 +1,6 @@
+import ctypes
 from ctypes import *
+from ctypes import c_long, c_double, c_int, c_char
 
 from enums import wfunc_e
 
@@ -34,3 +36,19 @@ class FMT_GD(Structure):
                 ("endFrameNr", c_long), ("winFunc", c_int), ("nomF1", c_double), ("rmsSil", c_double),
                 ("preEmph", c_double), ("lpOrder", c_int), ("numFormants", c_int), ("channel", c_int),
                 ("writeOpts", c_int), ("accuracy", c_int)]
+
+
+class AOPTS(ctypes.Structure):
+    _fields_ = [("options", c_long), ("beginTime", c_double), ("endTime", c_double), ("centreTime", c_double), ("msSize", c_double),
+         ("msShift", c_double), ("msSmooth", c_double), ("bandwidth", c_double), ("resolution", c_double), ("gain", c_double),
+         ("range", c_double), ("preEmph", c_double), ("alpha", c_double), ("threshold", c_double), ("maxF", c_double),
+         ("minF", c_double), ("nomF1", c_double), ("voiAC1", c_double), ("voiMag", c_double), ("voiProb", c_double),
+         ("voiRMS", c_double), ("voiZCR", c_double), ("hpCutOff", c_double), ("lpCutOff", c_double), ("stopDB", c_double),
+         ("tbWidth", c_double), ("FFTLen", c_long), ("channel", c_int), ("gender", c_int), ("order", c_int),
+         ("increment", c_int), ("numLevels", c_int), ("numFormants", c_int), ("precision", c_int), ("accuracy", c_int),
+         ("type", c_char * 32), ("format", c_char * 32), ("winFunc", c_char * 32)]
+
+    def __repr__(self):
+        strs = '\t'.join([f'{k}={getattr(self, k)}' for k, _ in self._fields_])
+
+        return f'AOPTS:\n{strs}'
