@@ -1,0 +1,13 @@
+# This is a comment
+prefix=/usr/local   # this defines a variable
+exec_prefix=${prefix}  # defining another variable in terms of the first
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include/libassp
+
+Name: libassp                            # human-readable name
+Description: Michel Scheffers' miscellaneous functions # human-readable description
+Version: 1.1
+Requires: 
+Conflicts:
+Libs: -L${libdir} -lmisc
+Cflags: -I${includedir}
