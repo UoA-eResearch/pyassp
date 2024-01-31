@@ -1,6 +1,8 @@
 import ctypes
 from pathlib import Path
-from structs import DOBJ, AOPTS
+
+from enums import dtype_e
+from structs import DOBJ, AOPTS, FMT_GD
 
 # Load libassp
 libname = Path().absolute() / 'libassp-1.1' / 'src' / '.libs' / 'libassp.so'
@@ -43,29 +45,39 @@ def get_formants(input_path: Path, num_formants: int, window_size: float, gender
     c_lib.computeFMT.restype = ctypes.POINTER(DOBJ)
     result_pt = c_lib.computeFMT(input_file, popts, None)
 
+    # Forest generics
+    fmt_gd_pt = ctypes.POINTER(FMT_GD)
+    fmt_gd = ctypes.cast(result_pt.contents.generic, fmt_gd_pt).contents
+
+    num_frames = fmt_gd.endFrameNr - fmt_gd.begFrameNr
+
     # For now, print results to stdout
-    # TODO: return these values
-    ## Attempt to parse data in output
-    dd = result_pt.contents.ddl
-    ptr = ctypes.c_void_p(result_pt.contents.dataBuffer)
+    for fr in range(num_frames):
+        print(f'Frame {fr}')
+        # TODO: return these values
+        dd = result_pt.contents.ddl
+        ptr = ctypes.c_void_p(result_pt.contents.dataBuffer)
 
-    # Print LP1 value
-    if dd.type == 'DT_LP1':
-        d_ptr = ctypes.cast(ptr, ctypes.POINTER(ctypes.c_double))
-        print(f'LP1: {d_ptr[0]}')
-        ptr = ctypes.c_void_p(ptr.value + ctypes.sizeof(ctypes.c_double))
+        # Print LP1 value if present
+        if dd.type == 'DT_LP1':
+            d_ptr = ctypes.cast(ptr, ctypes.POINTER(ctypes.c_double))
+            print(f'    LP1: {d_ptr[0]}')
+            ptr = ctypes.c_void_p(ptr.value + ctypes.sizeof(ctypes.c_double))
+            dd = dd.next.contents
+
+        # Frequency values
+        i_pt = ctypes.cast(ptr, ctypes.POINTER(ctypes.c_int16))
+        for i in range(dd.numFields):
+            print(f'    F{i}: {i_pt[i]}')
+        offset = dd.numFields
+
         dd = dd.next.contents
+        # Bandwidth values
+        for i in range(dd.numFields):
+            print(f'    B{i}: {i_pt[i + offset]}')
 
-    # Frequency values
-    i_pt = ctypes.cast(ptr, ctypes.POINTER(ctypes.c_int16))
-    for i in range(dd.numFields):
-        print(f'F{i}: {i_pt[i]}')
-    offset = dd.numFields
-
-    dd = dd.next.contents
-    # Bandwidth values
-    for i in range(dd.numFields):
-        print(f'B{i}: {i_pt[i + offset]}')
+    # for f, _ in DOBJ._fields_:
+    #     print(f'{f}: {getattr(result_pt.contents, f)}')
 
 
 if __name__ == '__main__':
