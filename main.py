@@ -1,47 +1,53 @@
 import ctypes
-import pathlib
-
+from pathlib import Path
 from structs import DOBJ, AOPTS
 
-if __name__ == '__main__':
-    # Load libassp
-    libname = pathlib.Path().absolute() / 'libassp-1.1' / 'src' / '.libs' / 'libassp.so'
-    c_lib = ctypes.CDLL(libname)
+# Load libassp
+libname = Path().absolute() / 'libassp-1.1' / 'src' / '.libs' / 'libassp.so'
+c_lib = ctypes.CDLL(str(libname))
 
+
+def load_file(file: Path) -> ctypes.POINTER(DOBJ):
+    assert file.exists(), f'File {file} does not exist'
+
+    c_lib.allocDObj.restype = ctypes.POINTER(DOBJ)
+    file_obj = c_lib.allocDObj()
+
+    c_lib.asspFOpen.argtypes = (ctypes.c_char_p, ctypes.c_int, ctypes.POINTER(DOBJ))
+    c_lib.asspFOpen.restype = ctypes.POINTER(DOBJ)
+
+    fname = str(file).encode('utf-8')
+    c_lib.asspFOpen(fname, 1, file_obj)
+
+    return file_obj
+
+
+def get_formants(input_path: Path, num_formants: int, window_size: float, gender: str, pre_emphasis: float):
     # Create options structure and set defaults
     opts = AOPTS()
     popts = ctypes.pointer(opts)
     c_lib.setFMTdefaults.argtypes = (ctypes.POINTER(AOPTS),)
     c_lib.setFMTdefaults(popts)
-    # TODO: set options from parameters
 
-    # From r code
-    opts.numFormants = 2
-    opts.msSize = 49.0
-    opts.gender = ord('f')
-    opts.preEmph = 0.95
+    opts.numFormants = num_formants
+    opts.msSize = window_size
+    assert gender in 'fmu', 'Expected gender to be m: male, f: female or u: unknown'
+    opts.gender = ord(gender)
+    opts.preEmph = pre_emphasis
 
     # Input file
-    s_file = pathlib.Path().absolute() / 'wavs' / 'oldfemale-word-taa-R001M.wav'
-    assert s_file.exists()
+    input_file = load_file(input_path)
 
-    c_lib.allocDObj.restype = ctypes.POINTER(DOBJ)
-    input_obj = c_lib.allocDObj()
-
-    c_lib.asspFOpen.argtypes = (ctypes.c_char_p, ctypes.c_int, ctypes.POINTER(DOBJ))
-    c_lib.asspFOpen.restype = ctypes.POINTER(DOBJ)
-
-    fname = str(s_file).encode('utf-8')
-    c_lib.asspFOpen(fname, 1, input_obj)
-
-    # Run forest - compute formants
+    # Comput formants
     c_lib.computeFMT.argtypes = (ctypes.POINTER(DOBJ), ctypes.POINTER(AOPTS), ctypes.POINTER(DOBJ))
     c_lib.computeFMT.restype = ctypes.POINTER(DOBJ)
-    out_pt = c_lib.computeFMT(input_obj, popts, None)
+    result_pt = c_lib.computeFMT(input_file, popts, None)
 
+    # For now, print results to stdout
+    # TODO: return these values
     ## Attempt to parse data in output
-    dd = out_pt.contents.ddl
-    ptr = ctypes.c_void_p(out_pt.contents.dataBuffer)
+    dd = result_pt.contents.ddl
+    ptr = ctypes.c_void_p(result_pt.contents.dataBuffer)
 
     # Print LP1 value
     if dd.type == 'DT_LP1':
@@ -61,4 +67,15 @@ if __name__ == '__main__':
     for i in range(dd.numFields):
         print(f'B{i}: {i_pt[i + offset]}')
 
-    # TODO: convert freq/bandwidth to fm values
+
+if __name__ == '__main__':
+    # Iterate over all input files
+    folder = Path().absolute() / 'wavs'
+
+    for s_file in folder.iterdir():
+        if s_file.suffix == '.wav':
+            gender = 'f' if 'female' in s_file.name else 'm'
+            print(s_file)
+            get_formants(s_file, 2, 49.0, gender, 0.95)
+
+    # TODO: also calculate rms and ksvf0 values
