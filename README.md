@@ -12,8 +12,6 @@ make
 # Progress/todo:
 Three functions required to recreate wrassp usage in MDAi:
 - computeFMT (forest) - largely complete
-  - note that the output buffer contains a lot more data than we're currently retrieving - what is it?
-  - DOBJ.maxbufrecs * DOBJ.recordsize items are present
 - rmsana - todo
 - ksvf0 - todo
 
